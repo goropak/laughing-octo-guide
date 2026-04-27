@@ -29,16 +29,13 @@
     </div>
 
     <script>
-        // 🚨 보안 체크: 로그인 정보(API 키)가 없으면 로그인 화면으로 강제 이동
-        const API_KEY = localStorage.getItem('AIzaSyB7hDAQ8X7qopxD4K3XYAtDWDGbUsuwo2c');
+        const API_KEY = localStorage.getItem('gemini_api_key');
         if (!API_KEY) {
-            alert('로그인이 필요합니다.');
             window.location.href = 'index.html';
         }
 
-        // 로그아웃 기능
         function logout() {
-            localStorage.removeItem('AIzaSyB7hDAQ8X7qopxD4K3XYAtDWDGbUsuwo2c');
+            localStorage.removeItem('gemini_api_key');
             window.location.href = 'index.html';
         }
         
@@ -52,56 +49,73 @@
             btn.innerText = "AI 분석 및 교정 중...";
             btn.disabled = true;
 
-            const systemInstruction = `
-                당신은 포스코(POSCO) 투자엔지니어링실의 전문 비즈니스 문장 검증 AI입니다.
-                [Step 1: 기본 교정] 오직 명백한 오타와 띄어쓰기만 교정합니다. 수치, 단위, 약어(5,500m³, CapEx 등)는 절대 훼손하지 마세요.
-                [Step 2: 드라이 모드 제안] Step 1의 문장을 포스코 특유의 간결하고 팩트 중심적인 톤앤매너로 윤문하고 능동태로 변환합니다.
-                
-                반드시 아래 JSON 형식으로만 응답하고 다른 텍스트는 붙이지 마세요:
-                {
-                  "step1_basic_correction": "...",
-                  "step2_advanced_suggestion": "...",
-                  "step2_reasons": [{"before": "...", "after": "...", "reason": "..."}]
-                }
-            `;
+            const systemInstruction = `당신은 포스코(POSCO) 비즈니스 문장 검증 AI입니다. 
+주어진 텍스트의 오타와 띄어쓰기를 교정하고, 포스코 특유의 간결한 비즈니스 톤앤매너(드라이 모드)로 윤문하세요.
+반드시 아래 JSON 형식으로만 응답하세요:
+{
+  "step1_basic_correction": "오타만 수정한 결과",
+  "step2_advanced_suggestion": "비즈니스 톤으로 윤문한 결과",
+  "step2_reasons": [
+    {"before": "기존", "after": "변경", "reason": "이유"}
+  ]
+}`;
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${API_KEY}`, {
+                // API URL 및 Payload 구조 최신화
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${API_KEY}`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        contents: [{ role: "user", parts: [{ text: inputText }] }],
-                        systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
-                        // 결과를 더 안정적인 JSON 형태로 받기 위한 설정
-                        generationConfig: { responseMimeType: "application/json" }
+                        systemInstruction: { parts: [{ text: systemInstruction }] },
+                        contents: [{ parts: [{ text: inputText }] }],
+                        generationConfig: { 
+                            temperature: 0.1, // 창의성 낮춤 (정확한 팩트와 구조 유지)
+                            responseMimeType: "application/json" // JSON 강제
+                        }
                     })
                 });
 
-                if (!response.ok) throw new Error('API 호출 실패 (키가 잘못되었거나 한도를 초과했습니다)');
+                // 1. API 키 오류나 서버 에러를 구체적으로 잡아냄
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(`통신 에러(${response.status}): ${errData.error?.message || '알 수 없는 오류'}`);
+                }
 
                 const data = await response.json();
                 let rawText = data.candidates[0].content.parts[0].text;
-                const result = JSON.parse(rawText);
+                
+                // 2. JSON 파싱 과정에서 에러가 나면 잡아냄
+                let result;
+                try {
+                    result = JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
+                } catch (e) {
+                    console.error("원본 응답:", rawText);
+                    throw new Error("AI가 분석할 수 없는 짧은 텍스트거나 응답 형식이 깨졌습니다.");
+                }
 
-                let reasonsHtml = result.step2_reasons.map(item => 
+                // 결과 그리기
+                const reasons = result.step2_reasons || [];
+                let reasonsHtml = reasons.map(item => 
                     `<li>• <span class="line-through">${item.before}</span> ➔ <strong>${item.after}</strong> (${item.reason})</li>`
                 ).join("");
+
+                if(!reasonsHtml) reasonsHtml = "<li>• 추가로 변경할 비즈니스 문맥이 없습니다.</li>";
 
                 resultArea.innerHTML = `
                     <div class="mb-6">
                         <h2 class="text-lg font-bold text-gray-700 border-b pb-2 mb-2">✅ 1단계: 기본 교정 (오타/띄어쓰기)</h2>
-                        <p class="text-gray-800 bg-gray-50 p-3 rounded">${result.step1_basic_correction}</p>
+                        <p class="text-gray-800 bg-gray-50 p-3 rounded">${result.step1_basic_correction || "결과 없음"}</p>
                     </div>
                     <div>
                         <h2 class="text-lg font-bold text-blue-700 border-b pb-2 mb-2">🚀 2단계: 드라이 모드 추천 (비즈니스 윤문)</h2>
-                        <p class="text-gray-800 bg-blue-50 p-3 rounded font-medium">${result.step2_advanced_suggestion}</p>
+                        <p class="text-gray-800 bg-blue-50 p-3 rounded font-medium">${result.step2_advanced_suggestion || "결과 없음"}</p>
                         <ul class="mt-3 text-sm text-gray-600 space-y-1">${reasonsHtml}</ul>
                     </div>
                 `;
             } catch (error) {
                 console.error(error);
-                alert("교정 중 오류가 발생했습니다. API 키를 다시 확인해주세요.");
-                // 오류 발생 시 로그아웃 처리하여 다시 키를 입력받도록 유도할 수도 있습니다.
+                // 화면에 정확히 어떤 에러인지 띄워줌
+                alert("🚨 시스템 에러: " + error.message);
             } finally {
                 btn.innerText = "포스코 모드로 교정 시작";
                 btn.disabled = false;
