@@ -30,7 +30,7 @@
 
     <script>
         // 🚨 보안 체크: 로그인 정보(API 키)가 없으면 로그인 화면으로 강제 이동
-        const API_KEY = localStorage.getItem('gemini_api_key');
+        const API_KEY = localStorage.getItem('AIzaSyB7hDAQ8X7qopxD4K3XYAtDWDGbUsuwo2c');
         if (!API_KEY) {
             alert('로그인이 필요합니다.');
             window.location.href = 'index.html';
@@ -38,7 +38,7 @@
 
         // 로그아웃 기능
         function logout() {
-            localStorage.removeItem('gemini_api_key');
+            localStorage.removeItem('AIzaSyB7hDAQ8X7qopxD4K3XYAtDWDGbUsuwo2c');
             window.location.href = 'index.html';
         }
         
