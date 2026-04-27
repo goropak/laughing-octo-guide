@@ -6,12 +6,12 @@
     <title>로그인 - POSCO Dry-Mode Editor</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-200 h-screen flex items-center justify-center font-sans">
+<body class="bg-gray-200 h-screen flex items-center justify-center font-sans text-gray-900">
     
     <div class="bg-white p-10 rounded-lg shadow-xl w-96">
         <div class="text-center mb-8">
             <h1 class="text-2xl font-bold text-blue-900">POSCO 문장 검증 비서</h1>
-            <p class="text-gray-500 text-sm mt-2">발급받은 API 키로 접속하세요.</p>
+            <p class="text-gray-500 text-sm mt-2">시스템 접속을 위해 API 키를 입력하세요.</p>
         </div>
         
         <div class="mb-6">
@@ -22,9 +22,10 @@
                    id="apiKey" type="password" placeholder="AIzaSy...">
         </div>
         
-        <button onclick="login()" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200">
+        <button onclick="login()" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200">
             시스템 접속
         </button>
+        <p class="mt-4 text-xs text-gray-400 text-center">※ 입력하신 키는 브라우저에만 안전하게 저장됩니다.</p>
     </div>
 
     <script>
