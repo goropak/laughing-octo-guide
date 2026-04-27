@@ -11,7 +11,7 @@
     <div class="bg-white p-10 rounded-lg shadow-xl w-96">
         <div class="text-center mb-8">
             <h1 class="text-2xl font-bold text-blue-900">POSCO 문장 검증 비서</h1>
-            <p class="text-gray-500 text-sm mt-2">보안을 위해 발급받은 API 키로 접속하세요.</p>
+            <p class="text-gray-500 text-sm mt-2">발급받은 API 키로 접속하세요.</p>
         </div>
         
         <div class="mb-6">
@@ -28,7 +28,6 @@
     </div>
 
     <script>
-        // 페이지 로드 시 이미 로그인(키 저장)되어 있다면 바로 에디터로 이동
         if (localStorage.getItem('gemini_api_key')) {
             window.location.href = 'editor.html';
         }
@@ -39,11 +38,7 @@
                 alert('API 키를 입력해주세요.');
                 return;
             }
-            
-            // 브라우저 로컬 스토리지에 키 저장 (창을 닫아도 유지됨)
-            localStorage.setItem('AIzaSyB7hDAQ8X7qopxD4K3XYAtDWDGbUsuwo2c', key);
-            
-            // 메인 에디터 화면으로 이동
+            localStorage.setItem('gemini_api_key', key);
             window.location.href = 'editor.html';
         }
     </script>
